@@ -45,13 +45,39 @@ def predict_t(samples):
 ###--- Density functions ---###
 
 def log_prior(u, K_inverse):
+    d = u.shape[0]  # Dimension of u
     
+    # Mahalanobis term: u^T K^{-1} u
+    mahalanobis = u.T @ K_inverse @ u
     
-    return # TODO: Return log p(u)
-
+    # Compute log(det(K)) from log(det(K_inverse))
+    sign, logdetK_inv = np.linalg.slogdet(K_inverse)
+    # Usually sign should be 1 for a valid covariance, but we keep it to handle numerical aspects.
+    logdetK = -logdetK_inv
+    
+    # Combine terms
+    log_pdf = - 0.5 * mahalanobis \
+              - 0.5 * logdetK \
+              - 0.5 * d * np.log(2 * np.pi)
+    
+    return log_pdf
 
 def log_continuous_likelihood(u, v, G):
-    return # TODO: Return observation likelihood p(v|u)
+    
+    # Predicted true value
+    v_true = G @ u
+    
+    # Noise term
+    noise = v - v_true
+    
+    # Mahalanobis term (squared norm of noise, since covariance is identity)
+    mahalanobis = np.sum(noise**2)
+    
+    # Log probability
+    n = v.shape[0]  # Dimension of v
+    log_pdf = -0.5 * mahalanobis - 0.5 * n * np.log(2 * np.pi)
+    
+    return log_pdf
 
 
 def log_probit_likelihood(u, t, G):
