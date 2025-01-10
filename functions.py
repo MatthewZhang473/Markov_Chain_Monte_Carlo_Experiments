@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.spatial import distance_matrix
-from scipy.stats import norm
+from scipy.stats import uniform, norm, multivariate_normal
 import matplotlib.cm as cm
 import copy
 
@@ -123,23 +123,27 @@ def grw(log_target, u0, data, K, G, n_iters, beta):
     u_prev = u0
 
     # Inverse computed before the for loop for speed
+    N = K.shape[0]
     Kc = np.linalg.cholesky(K + 1e-6 * np.eye(N))
     Kc_inverse = np.linalg.inv(Kc)
-    K_inverse = None # TODO: compute the inverse of K using its Cholesky decomopsition
+    K_inverse = Kc_inverse.T @ Kc_inverse # TODO: compute the inverse of K using its Cholesky decomopsition
 
     lt_prev = log_target(u_prev, data, K_inverse, G)
 
     for i in range(n_iters):
 
-        u_new = None # TODO: Propose new sample - use prior covariance, scaled by beta
+        # generate a gaussian noise with identity covariance
+        epsilon = np.random.normal(0, 1, u_prev.shape)
+        zeta = Kc @ epsilon
+        u_new = u_prev + beta * zeta # TODO: Propose new sample - use prior covariance, scaled by beta
 
         lt_new = log_target(u_new, data, K_inverse, G)
 
-        log_alpha = None # TODO: Calculate acceptance probability based on lt_prev, lt_new
+        log_alpha = lt_new - lt_prev # TODO: Calculate acceptance probability based on lt_prev, lt_new
         log_u = np.log(np.random.random())
 
         # Accept/Reject
-        accept = None # TODO: Compare log_alpha and log_u to accept/reject sample (accept should be boolean)
+        accept = log_alpha > log_u  # TODO: Compare log_alpha and log_u to accept/reject sample (accept should be boolean)
         if accept:
             acc += 1
             X.append(u_new)
